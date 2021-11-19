@@ -9,7 +9,7 @@ import time
 import random
 import sys
 
-from brownie import web3, convert
+from brownie import web3, convert, accounts
 from brownie import Liquidator
 import httpx
 
@@ -218,7 +218,7 @@ def main():
             accounts = query_underwater_accounts()
             for liquidation_params in liquidation_parameters(accounts):
                 try:
-                    Liquidator.liquidateLoan(*liquidation_params)
+                    Liquidator.liquidateLoan(*liquidation_params, {'from': accounts[0]})
                 except brownie.exceptions.VirtualMachineError as exc:
                     print(f"Exception liquidation loan {exc}", file=sys.stderr)
                 else:
