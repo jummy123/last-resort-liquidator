@@ -34,13 +34,13 @@ contract Liquidator is ERC3156FlashBorrowerInterface {
         address tokenAddress,
         uint amount
     );
-	// Event used for debugging.
-	event Debug(
-		string key,
-		string stringValue,
-		uint uintValue,
-		address addressValue
-	);
+    // Event used for debugging.
+    event Debug(
+        string key,
+        string stringValue,
+        uint uintValue,
+        address addressValue
+    );
 
     address public owner;   // Where to send profits of liquidating
 
@@ -59,7 +59,6 @@ contract Liquidator is ERC3156FlashBorrowerInterface {
 
     // Swap all the `tokenFrom` this contract holds to `tokenTo`.
     function swapERC20(address tokenFrom, address tokenTo) internal {
-        // XXX: Save gas by optimising this double balance check.
         require(IERC20(tokenFrom).balanceOf(address(this)) > 0, "Contract has no balance of tokenFrom");
 
         uint amountFrom = IERC20(tokenFrom).balanceOf(address(this));
@@ -133,151 +132,151 @@ contract Liquidator is ERC3156FlashBorrowerInterface {
     function liquidateLoan(
         address borrower,
         address jTokenLiquidateAddress,
-		address jTokenLiquidateUnderlying,
+        address jTokenLiquidateUnderlying,
         address jTokenCollateral,
         address jTokenCollateralUnderlying,
-		address jTokenFlashLoan,
-		address jTokenFlashLoanUnderlying
+        address jTokenFlashLoan,
+        address jTokenFlashLoanUnderlying
     ) external {
-		// So the steps are as follows.
-		// 1. Work out how much we need to repay.
-		// 2. Work out how much we need to flash loan.
-		// 3. Flash loan a token that is not the token to repay (non re-entrant).
-		// 4. Swap the token for the loan to repay.
-		// 5. Repay the loan.
-		// 6. Withdraw the seized funds.
-		// 7. Repay the flashloan
-		// 9. Send the seized funds to the owner.
+        // So the steps are as follows.
+        // 1. Work out how much we need to repay.
+        // 2. Work out how much we need to flash loan.
+        // 3. Flash loan a token that is not the token to repay (non re-entrant).
+        // 4. Swap the token for the loan to repay.
+        // 5. Repay the loan.
+        // 6. Withdraw the seized funds.
+        // 7. Repay the flashloan
+        // 9. Send the seized funds to the owner.
 
-		// Due to the re-entrant protection on trader joe
-		// we must flash loan a token that will not be
-		// seized or liquidated.
+        // Due to the re-entrant protection on trader joe
+        // we must flash loan a token that will not be
+        // seized or liquidated.
 
-		// 1. How much we need to repay.
-		uint repayAmount = amountToRepay(
-			borrower,
-			jTokenLiquidateAddress,
-			jTokenFlashLoanUnderlying);
+        // 1. How much we need to repay.
+        uint repayAmount = amountToRepay(
+            borrower,
+            jTokenLiquidateAddress,
+            jTokenFlashLoanUnderlying);
 
-		// 2. How much we need to flashloan.
-		uint flashLoanAmount = getFlashLoanAmount(
-			jTokenFlashLoanUnderlying,
-			jTokenLiquidateUnderlying,
-			repayAmount);
+        // 2. How much we need to flashloan.
+        uint flashLoanAmount = getFlashLoanAmount(
+            jTokenFlashLoanUnderlying,
+            jTokenLiquidateUnderlying,
+            repayAmount);
 
-		// Data to pass through to the callback function.
-		bytes memory data = abi.encode(
-			borrower,
-			repayAmount,
-			jTokenLiquidateAddress,
-			jTokenLiquidateUnderlying,
-			jTokenCollateral,
-			jTokenCollateralUnderlying,
-			jTokenFlashLoanUnderlying
-		);
-		// 3. Perform the flash loan.
-		ERC3156FlashLenderInterface(jTokenFlashLoan).flashLoan(
-			this,
-			jTokenFlashLoan,
-			flashLoanAmount,
-			data);
+        // Data to pass through to the callback function.
+        bytes memory data = abi.encode(
+            borrower,
+            repayAmount,
+            jTokenLiquidateAddress,
+            jTokenLiquidateUnderlying,
+            jTokenCollateral,
+            jTokenCollateralUnderlying,
+            jTokenFlashLoanUnderlying
+        );
+        // 3. Perform the flash loan.
+        ERC3156FlashLenderInterface(jTokenFlashLoan).flashLoan(
+            this,
+            jTokenFlashLoan,
+            flashLoanAmount,
+            data);
     }
 
-	function onFlashLoan(
+    function onFlashLoan(
         address initiator,
         address token,
         uint256 amount,
         uint256 fee,
         bytes calldata data
     ) override external returns (bytes32) {
-		emit Flashloaned(token, amount, fee);
+        emit Flashloaned(token, amount, fee);
         require(joeComptroller.isMarketListed(msg.sender), "untrusted message sender");
 
-		(
-			address borrower,
-			uint repayAmount,
-			address jTokenLiquidateAddress,
-			address jTokenLiquidateUnderlying,
-			address jTokenCollateral,
-			address jTokenCollateralUnderlying,
-			address jTokenFlashLoanUnderlying
-		) = abi.decode(data, (
-			address, uint, address, address, address, address, address
-		));
-		// 4. Swap the flash loan for the amount we will repay.
-		swapERC20(jTokenFlashLoanUnderlying, jTokenLiquidateUnderlying);
+        (
+            address borrower,
+            uint repayAmount,
+            address jTokenLiquidateAddress,
+            address jTokenLiquidateUnderlying,
+            address jTokenCollateral,
+            address jTokenCollateralUnderlying,
+            address jTokenFlashLoanUnderlying
+        ) = abi.decode(data, (
+            address, uint, address, address, address, address, address
+        ));
+        // 4. Swap the flash loan for the amount we will repay.
+        swapERC20(jTokenFlashLoanUnderlying, jTokenLiquidateUnderlying);
 
-		// 5. Liquidate the borrower.
-		// Approve the jtoken to spend our repayment.
-		liquidateBorrower(
-			jTokenLiquidateUnderlying,
-			jTokenLiquidateAddress,
-			borrower,
-			repayAmount,
-			jTokenCollateral
-		);
-		emit Liquidated(borrower, jTokenLiquidateAddress, repayAmount);
+        // 5. Liquidate the borrower.
+        // Approve the jtoken to spend our repayment.
+        liquidateBorrower(
+            jTokenLiquidateUnderlying,
+            jTokenLiquidateAddress,
+            borrower,
+            repayAmount,
+            jTokenCollateral
+        );
+        emit Liquidated(borrower, jTokenLiquidateAddress, repayAmount);
 
-		// 6. Withdraw the seized funds.
-		JToken(jTokenCollateral).redeem(JToken(jTokenCollateral).balanceOf(address(this)));
+        // 6. Withdraw the seized funds.
+        JToken(jTokenCollateral).redeem(JToken(jTokenCollateral).balanceOf(address(this)));
 
         // 7. Repay the flash loan.
-		swapERC20(jTokenCollateralUnderlying, jTokenFlashLoanUnderlying);
+        swapERC20(jTokenCollateralUnderlying, jTokenFlashLoanUnderlying);
 
-		IERC20(token).approve(msg.sender, amount + fee);
+        IERC20(token).approve(msg.sender, amount + fee);
 
-		// 8. Send seized funds to owner.
-		IERC20(jTokenFlashLoanUnderlying).transfer(
-			owner,
+        // 8. Send seized funds to owner.
+        IERC20(jTokenFlashLoanUnderlying).transfer(
+            owner,
             IERC20(jTokenFlashLoanUnderlying).balanceOf(address(this)) - (amount + fee));
 
-		// Done.
+        // Done.
         return keccak256("ERC3156FlashBorrowerInterface.onFlashLoan");
     }
 
-	// 1. How much we need to repay.
-	function amountToRepay(
-		address borrower,
-		address jTokenLiquidateAddress,
-		address jTokenFlashLoanUnderlying
-	) internal returns (uint) {
-		uint borrowBalance = JToken(jTokenLiquidateAddress).borrowBalanceCurrent(borrower);
-    	uint closeFactor = joeComptroller.closeFactorMantissa();
-		uint repayAmount = (borrowBalance * closeFactor) / (10 ** 18);
-		return repayAmount;
-	}
+    // 1. How much we need to repay.
+    function amountToRepay(
+        address borrower,
+        address jTokenLiquidateAddress,
+        address jTokenFlashLoanUnderlying
+    ) internal returns (uint) {
+        uint borrowBalance = JToken(jTokenLiquidateAddress).borrowBalanceCurrent(borrower);
+        uint closeFactor = joeComptroller.closeFactorMantissa();
+        uint repayAmount = (borrowBalance * closeFactor) / (10 ** 18);
+        return repayAmount;
+    }
 
-	// 2. How much we need to flashloan.
-	function getFlashLoanAmount(
-		address jTokenFlashLoanUnderlying,
-		address jTokenLiquidateUnderlying,
-		uint repayAmount
-	) internal returns (uint) {
-			address[] memory path = new address[](2);
-			path[0] = jTokenFlashLoanUnderlying;
-			path[1] = jTokenLiquidateUnderlying;
-			uint flashLoanAmount = joeRouter.getAmountsIn(repayAmount, path)[0];
-			return flashLoanAmount;
-	}
+    // 2. How much we need to flashloan.
+    function getFlashLoanAmount(
+        address jTokenFlashLoanUnderlying,
+        address jTokenLiquidateUnderlying,
+        uint repayAmount
+    ) internal returns (uint) {
+            address[] memory path = new address[](2);
+            path[0] = jTokenFlashLoanUnderlying;
+            path[1] = jTokenLiquidateUnderlying;
+            uint flashLoanAmount = joeRouter.getAmountsIn(repayAmount, path)[0];
+            return flashLoanAmount;
+    }
 
-	// 5. Liquidate the borrower.
-	function liquidateBorrower(
-		address jTokenLiquidateUnderlying,
-		address jTokenLiquidateAddress,
-		address borrower,
-		uint repayAmount,
-		address jTokenCollateral
-	) internal {
-		// Approve the jtoken to spend our repayment.
-		IERC20(jTokenLiquidateUnderlying).approve(
-			jTokenLiquidateAddress,
-			IERC20(jTokenLiquidateUnderlying).balanceOf(address(this)));
-		// The actual liquidation
-		JToken(jTokenLiquidateAddress).liquidateBorrow(
-			borrower,
-			repayAmount,
-			JToken(jTokenCollateral));
-	}
+    // 5. Liquidate the borrower.
+    function liquidateBorrower(
+        address jTokenLiquidateUnderlying,
+        address jTokenLiquidateAddress,
+        address borrower,
+        uint repayAmount,
+        address jTokenCollateral
+    ) internal {
+        // Approve the jtoken to spend our repayment.
+        IERC20(jTokenLiquidateUnderlying).approve(
+            jTokenLiquidateAddress,
+            IERC20(jTokenLiquidateUnderlying).balanceOf(address(this)));
+        // The actual liquidation
+        JToken(jTokenLiquidateAddress).liquidateBorrow(
+            borrower,
+            repayAmount,
+            JToken(jTokenCollateral));
+    }
 
     // Function to allow us to fund our contract with seed funds.
     // Not actually needed.
