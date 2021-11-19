@@ -54,3 +54,4 @@ Things I really should have done but didn't. As I mentioned this project was a l
 * learn [NatSpec](https://docs.soliditylang.org/) documentation format
 * listen to a real node and maintain a local database of account health
 * Dockerfile so people don't need to install the deps
+* Config such be loaded from env (deployed addresses etc)
