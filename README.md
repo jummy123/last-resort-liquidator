@@ -29,6 +29,13 @@ There are a number of useful [make](https://www.gnu.org/software/make/) targets 
 
 The test suit contains some tests I wrote for extra learning along the way, the test `test_liquidate_borrow` is particularly useful if you want to see the end to end process of liquidating a loan without using any deployed contracts.
 
+## Where the magic happens
+
+There are 3 main files you should look at to see how this project works.
+The [contract](https://github.com/jummy123/last-resort-liquidator/blob/master/contracts/Liquidator.sol) contains the solidity code with all on chain functionality.
+The [bot](https://github.com/jummy123/last-resort-liquidator/blob/master/scripts/liquidation.py) that contains the functionality for finding liquidation opportunities and calling our contract.
+the [test](https://github.com/jummy123/last-resort-liquidator/blob/master/tests/test_liquidator.py) where you can see how the code actually works.
+
 ## Things I learnt.
 
 * I had to inline a lot of variables, the solidity stack is shallow!
@@ -46,3 +53,4 @@ Things I really should have done but didn't. As I mentioned this project was a l
 * Accounts with not enough collateral in a single token to liquidate half an entire loan will be skipped
 * learn [NatSpec](https://docs.soliditylang.org/) documentation format
 * listen to a real node and maintain a local database of account health
+* Dockerfile so people don't need to install the deps
